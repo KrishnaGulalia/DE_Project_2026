@@ -22,12 +22,12 @@
 
 | Role | Name | Enrollment No. | GitHub Username |
 |------|------|----------------|-----------------|
-| Group Lead | | | |
-| Member 2 | | | |
-| Member 3 | | | |
-| Member 4 | | | |
+| Group Lead|Krishna Gulalia | 2501010232| KrishnaGulalia|
+| Member 2 |Tahseen Sarwar| 2501010574 | TahseenSarwar1 |
+| Member 3 |Srijan Pal | 2501010633 | srijanpal006 |
+| Member 4 |Atharva Chiddarwar | 2501010103 | atharvachiddarwaar18 |
 
-**Team No.:** ____ · **Section:** ____ · **Repository URL:** ____
+**Team No.:** T0011 · **Section:** A · **Repository URL:** https://github.com/KrishnaGulalia/DE_Project_2026
 
 ---
 

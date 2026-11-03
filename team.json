@@ -1,0 +1,11 @@
+{
+  "team_number": "T0011",
+  "group_lead": { "name": "Krishna Gulalia", "enrollment_no": "2501010232", "github": "KrishnaGulalia" },
+  "members": [
+    { "name": "Tahseen Sarwar", "enrollment_no": "2501010574", "github": "TahseenSarwar1" },
+    { "name": "Srijan Pal", "enrollment_no": "2501010633", "github": "srijanpal006" },
+    { "name": "Atharva Chiddarwar", "enrollment_no": "2501010103", "github": "atharvachiddarwaar18" }
+  ],
+  "postgres_version": "",
+  "laptop_used_for_benchmarks": "Macbook pro M4"
+}
