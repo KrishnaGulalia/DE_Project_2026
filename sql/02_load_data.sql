@@ -1,13 +1,9 @@
--- =========================================================
--- MakeMyTrip Travel Booking Database
--- Phase 2 - Load Seed Data
--- PostgreSQL 15+
--- =========================================================
+
 
 SET search_path TO mmt;
 
 
--- Parent tables first
+
 \copy airports FROM 'seed_data/airports.csv' WITH (FORMAT csv, HEADER true);
 
 \copy airlines FROM 'seed_data/airlines.csv' WITH (FORMAT csv, HEADER true);
@@ -19,7 +15,7 @@ SET search_path TO mmt;
 \copy coupons FROM 'seed_data/coupons.csv' WITH (FORMAT csv, HEADER true);
 
 
--- Tables depending on parents
+
 \copy room_types FROM 'seed_data/room_types.csv' WITH (FORMAT csv, HEADER true);
 
 \copy flights FROM 'seed_data/flights.csv' WITH (FORMAT csv, HEADER true);
@@ -27,7 +23,7 @@ SET search_path TO mmt;
 \copy bookings FROM 'seed_data/bookings.csv' WITH (FORMAT csv, HEADER true);
 
 
--- Child booking tables
+
 \copy flight_bookings FROM 'seed_data/flight_bookings.csv' WITH (FORMAT csv, HEADER true);
 
 \copy hotel_bookings FROM 'seed_data/hotel_bookings.csv' WITH (FORMAT csv, HEADER true);
@@ -41,9 +37,7 @@ SET search_path TO mmt;
 ANALYZE;
 
 
--- =========================================================
--- Row-count verification
--- =========================================================
+
 
 SELECT 'airports' AS table_name, COUNT(*) AS row_count FROM airports
 UNION ALL
@@ -71,11 +65,6 @@ SELECT 'hotel_reviews', COUNT(*) FROM hotel_reviews
 ORDER BY table_name;
 
 
--- =========================================================
--- Integrity check 1:
--- Every flight booking should have the same number of
--- passenger rows as the passengers column.
--- =========================================================
 
 SELECT
     fb.booking_id,
@@ -88,11 +77,6 @@ GROUP BY fb.booking_id, fb.passengers
 HAVING fb.passengers <> COUNT(p.seq_no);
 
 
--- =========================================================
--- Integrity check 2:
--- No flight booking should be made after the flight departed.
--- =========================================================
-
 SELECT
     fb.booking_id,
     b.booked_at,
@@ -104,12 +88,6 @@ JOIN flights f
     ON f.flight_id = fb.flight_id
 WHERE b.booked_at > f.departure_at;
 
-
--- =========================================================
--- Integrity check 3:
--- A booking must belong to exactly one product:
--- flight OR hotel, never both.
--- =========================================================
 
 SELECT
     b.booking_id,
@@ -125,8 +103,3 @@ WHERE
     (fb.booking_id IS NOT NULL AND hb.booking_id IS NOT NULL)
     OR
     (fb.booking_id IS NULL AND hb.booking_id IS NULL);
-
-
--- =========================================================
--- End
--- =========================================================
