@@ -1,0 +1,66 @@
+=== W02 run 1 ===
+Update on bookings  (cost=63.15..71.16 rows=0 width=0) (actual time=9.406..9.406 rows=0.00 loops=1)
+  Buffers: shared hit=2380 dirtied=4
+  InitPlan 2
+    ->  Result  (cost=62.84..62.85 rows=1 width=4) (actual time=9.251..9.251 rows=1.00 loops=1)
+          Buffers: shared hit=2322 dirtied=1
+          InitPlan 1
+            ->  Limit  (cost=0.29..62.84 rows=1 width=4) (actual time=9.250..9.250 rows=1.00 loops=1)
+                  Buffers: shared hit=2322 dirtied=1
+                  ->  Index Scan using bookings_pkey on bookings bookings_1  (cost=0.29..6067.28 rows=97 width=4) (actual time=9.250..9.250 rows=1.00 loops=1)
+                        Filter: ((status)::text = 'PENDING_PAYMENT'::text)
+                        Rows Removed by Filter: 144695
+                        Index Searches: 1
+                        Buffers: shared hit=2322 dirtied=1
+  ->  Index Scan using bookings_pkey on bookings  (cost=0.29..8.31 rows=1 width=64) (actual time=9.259..9.259 rows=1.00 loops=1)
+        Index Cond: (booking_id = (InitPlan 2).col1)
+        Index Searches: 1
+        Buffers: shared hit=2327 dirtied=1
+Planning:
+  Buffers: shared hit=136
+Planning Time: 0.218 ms
+Execution Time: 9.458 ms
+=== W02 run 2 ===
+Update on bookings  (cost=63.15..71.16 rows=0 width=0) (actual time=9.152..9.153 rows=0.00 loops=1)
+  Buffers: shared hit=2375 dirtied=1
+  InitPlan 2
+    ->  Result  (cost=62.84..62.85 rows=1 width=4) (actual time=9.006..9.007 rows=1.00 loops=1)
+          Buffers: shared hit=2317
+          InitPlan 1
+            ->  Limit  (cost=0.29..62.84 rows=1 width=4) (actual time=9.005..9.006 rows=1.00 loops=1)
+                  Buffers: shared hit=2317
+                  ->  Index Scan using bookings_pkey on bookings bookings_1  (cost=0.29..6067.28 rows=97 width=4) (actual time=9.005..9.005 rows=1.00 loops=1)
+                        Filter: ((status)::text = 'PENDING_PAYMENT'::text)
+                        Rows Removed by Filter: 144695
+                        Index Searches: 1
+                        Buffers: shared hit=2317
+  ->  Index Scan using bookings_pkey on bookings  (cost=0.29..8.31 rows=1 width=64) (actual time=9.014..9.015 rows=1.00 loops=1)
+        Index Cond: (booking_id = (InitPlan 2).col1)
+        Index Searches: 1
+        Buffers: shared hit=2322
+Planning:
+  Buffers: shared hit=136
+Planning Time: 0.228 ms
+Execution Time: 9.194 ms
+=== W02 run 3 ===
+Update on bookings  (cost=63.15..71.16 rows=0 width=0) (actual time=8.871..8.872 rows=0.00 loops=1)
+  Buffers: shared hit=2375 dirtied=1
+  InitPlan 2
+    ->  Result  (cost=62.84..62.85 rows=1 width=4) (actual time=8.735..8.735 rows=1.00 loops=1)
+          Buffers: shared hit=2317
+          InitPlan 1
+            ->  Limit  (cost=0.29..62.84 rows=1 width=4) (actual time=8.734..8.734 rows=1.00 loops=1)
+                  Buffers: shared hit=2317
+                  ->  Index Scan using bookings_pkey on bookings bookings_1  (cost=0.29..6067.28 rows=97 width=4) (actual time=8.733..8.733 rows=1.00 loops=1)
+                        Filter: ((status)::text = 'PENDING_PAYMENT'::text)
+                        Rows Removed by Filter: 144695
+                        Index Searches: 1
+                        Buffers: shared hit=2317
+  ->  Index Scan using bookings_pkey on bookings  (cost=0.29..8.31 rows=1 width=64) (actual time=8.743..8.744 rows=1.00 loops=1)
+        Index Cond: (booking_id = (InitPlan 2).col1)
+        Index Searches: 1
+        Buffers: shared hit=2322
+Planning:
+  Buffers: shared hit=136
+Planning Time: 0.210 ms
+Execution Time: 8.912 ms

@@ -1,0 +1,84 @@
+=== R20 run 1 ===
+WindowAgg  (cost=4582.39..4690.09 rows=724 width=44) (actual time=17.931..18.813 rows=30.00 loops=1)
+  Window: w1 AS (ORDER BY ((bookings.booked_at)::date))
+  Storage: Memory  Maximum Storage: 17kB
+  Buffers: shared hit=481
+  ->  GroupAggregate  (cost=4582.24..4679.23 rows=724 width=12) (actual time=17.898..18.792 rows=30.00 loops=1)
+        Group Key: ((bookings.booked_at)::date)
+        Buffers: shared hit=481
+        ->  Gather Merge  (cost=4582.24..4666.56 rows=724 width=4) (actual time=17.872..18.599 rows=7928.00 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=481
+              ->  Sort  (cost=3582.21..3582.97 rows=302 width=4) (actual time=8.498..8.547 rows=2642.67 loops=3)
+                    Sort Key: ((bookings.booked_at)::date)
+                    Sort Method: quicksort  Memory: 193kB
+                    Buffers: shared hit=481
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Parallel Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..3569.77 rows=302 width=4) (actual time=2.542..8.239 rows=2642.67 loops=3)
+                          Filter: (((booked_at)::date >= '2026-06-01'::date) AND ((booked_at)::date <= '2026-06-30'::date))
+                          Rows Removed by Filter: 45621
+                          Heap Fetches: 291
+                          Index Searches: 1
+                          Buffers: shared hit=405
+Planning:
+  Buffers: shared hit=157
+Planning Time: 0.643 ms
+Execution Time: 18.924 ms
+=== R20 run 2 ===
+WindowAgg  (cost=4582.39..4690.09 rows=724 width=44) (actual time=4.572..5.476 rows=30.00 loops=1)
+  Window: w1 AS (ORDER BY ((bookings.booked_at)::date))
+  Storage: Memory  Maximum Storage: 17kB
+  Buffers: shared hit=481
+  ->  GroupAggregate  (cost=4582.24..4679.23 rows=724 width=12) (actual time=4.534..5.439 rows=30.00 loops=1)
+        Group Key: ((bookings.booked_at)::date)
+        Buffers: shared hit=481
+        ->  Gather Merge  (cost=4582.24..4666.56 rows=724 width=4) (actual time=4.509..5.136 rows=7928.00 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=481
+              ->  Sort  (cost=3582.21..3582.97 rows=302 width=4) (actual time=3.033..3.104 rows=2642.67 loops=3)
+                    Sort Key: ((bookings.booked_at)::date)
+                    Sort Method: quicksort  Memory: 193kB
+                    Buffers: shared hit=481
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Parallel Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..3569.77 rows=302 width=4) (actual time=1.540..2.934 rows=2642.67 loops=3)
+                          Filter: (((booked_at)::date >= '2026-06-01'::date) AND ((booked_at)::date <= '2026-06-30'::date))
+                          Rows Removed by Filter: 45621
+                          Heap Fetches: 291
+                          Index Searches: 1
+                          Buffers: shared hit=405
+Planning:
+  Buffers: shared hit=157
+Planning Time: 0.234 ms
+Execution Time: 5.519 ms
+=== R20 run 3 ===
+WindowAgg  (cost=4582.39..4690.09 rows=724 width=44) (actual time=4.588..5.186 rows=30.00 loops=1)
+  Window: w1 AS (ORDER BY ((bookings.booked_at)::date))
+  Storage: Memory  Maximum Storage: 17kB
+  Buffers: shared hit=481
+  ->  GroupAggregate  (cost=4582.24..4679.23 rows=724 width=12) (actual time=4.557..5.168 rows=30.00 loops=1)
+        Group Key: ((bookings.booked_at)::date)
+        Buffers: shared hit=481
+        ->  Gather Merge  (cost=4582.24..4666.56 rows=724 width=4) (actual time=4.533..4.975 rows=7928.00 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=481
+              ->  Sort  (cost=3582.21..3582.97 rows=302 width=4) (actual time=3.204..3.252 rows=2642.67 loops=3)
+                    Sort Key: ((bookings.booked_at)::date)
+                    Sort Method: quicksort  Memory: 193kB
+                    Buffers: shared hit=481
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Parallel Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..3569.77 rows=302 width=4) (actual time=1.712..3.106 rows=2642.67 loops=3)
+                          Filter: (((booked_at)::date >= '2026-06-01'::date) AND ((booked_at)::date <= '2026-06-30'::date))
+                          Rows Removed by Filter: 45621
+                          Heap Fetches: 291
+                          Index Searches: 1
+                          Buffers: shared hit=405
+Planning:
+  Buffers: shared hit=157
+Planning Time: 0.353 ms
+Execution Time: 5.235 ms
