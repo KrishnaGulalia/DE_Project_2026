@@ -1,0 +1,6 @@
+query_id,type,avg_ms,median_ms,min_ms,max_ms,scan_nodes
+R07,READ,0.170,0.169,0.139,0.201,Index Scan using idx_flight_bookings_flight_id on flight_bookings | Index Scan using bookings_pkey on bookings | Index Scan using passengers_pkey on passengers
+R08,READ,2.442,2.491,2.282,2.553,Seq Scan on flights | Index Scan using idx_flight_bookings_flight_id on flight_bookings
+R19,READ,6.020,5.884,5.402,6.774,Seq Scan on flights | Index Scan using idx_flight_bookings_flight_id on flight_bookings | Index Only Scan using passengers_pkey on passengers
+R22,READ,8.868,8.638,8.321,9.645,Index Scan using idx_bookings_booked_at_desc on bookings
+R23,READ,0.031,0.031,0.030,0.032,Bitmap Heap Scan on customers | Bitmap Index Scan on idx_customers_lower_email

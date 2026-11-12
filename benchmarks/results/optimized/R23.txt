@@ -1,0 +1,39 @@
+=== R23 run 1 ===
+Bitmap Heap Scan on customers  (cost=9.96..402.13 rows=200 width=22) (actual time=0.012..0.012 rows=1.00 loops=1)
+  Recheck Cond: (lower(email) = 'siddharth.sharma1021@rediffmail.com'::text)
+  Heap Blocks: exact=1
+  Buffers: shared hit=4
+  ->  Bitmap Index Scan on idx_customers_lower_email  (cost=0.00..9.91 rows=200 width=0) (actual time=0.008..0.008 rows=1.00 loops=1)
+        Index Cond: (lower(email) = 'siddharth.sharma1021@rediffmail.com'::text)
+        Index Searches: 1
+        Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=109
+Planning Time: 0.238 ms
+Execution Time: 0.031 ms
+=== R23 run 2 ===
+Bitmap Heap Scan on customers  (cost=9.96..402.13 rows=200 width=22) (actual time=0.012..0.013 rows=1.00 loops=1)
+  Recheck Cond: (lower(email) = 'siddharth.sharma1021@rediffmail.com'::text)
+  Heap Blocks: exact=1
+  Buffers: shared hit=4
+  ->  Bitmap Index Scan on idx_customers_lower_email  (cost=0.00..9.91 rows=200 width=0) (actual time=0.008..0.008 rows=1.00 loops=1)
+        Index Cond: (lower(email) = 'siddharth.sharma1021@rediffmail.com'::text)
+        Index Searches: 1
+        Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=109
+Planning Time: 0.200 ms
+Execution Time: 0.032 ms
+=== R23 run 3 ===
+Bitmap Heap Scan on customers  (cost=9.96..402.13 rows=200 width=22) (actual time=0.012..0.012 rows=1.00 loops=1)
+  Recheck Cond: (lower(email) = 'siddharth.sharma1021@rediffmail.com'::text)
+  Heap Blocks: exact=1
+  Buffers: shared hit=4
+  ->  Bitmap Index Scan on idx_customers_lower_email  (cost=0.00..9.91 rows=200 width=0) (actual time=0.008..0.008 rows=1.00 loops=1)
+        Index Cond: (lower(email) = 'siddharth.sharma1021@rediffmail.com'::text)
+        Index Searches: 1
+        Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=109
+Planning Time: 0.194 ms
+Execution Time: 0.030 ms
