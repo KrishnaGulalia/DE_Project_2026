@@ -1,0 +1,133 @@
+erDiagram
+
+    AIRPORTS {
+        CHAR iata_code PK
+        TEXT airport_name
+        TEXT city_name
+        CHAR country_code
+    }
+
+    AIRLINES {
+        VARCHAR airline_code PK
+        TEXT airline_name
+    }
+
+    HOTELS {
+        INTEGER hotel_id PK
+        TEXT hotel_name
+        TEXT city_name
+        SMALLINT star_rating
+        NUMERIC user_rating
+        JSONB amenities
+        TIME check_in_time
+        TIME check_out_time
+    }
+
+    ROOM_TYPES {
+        INTEGER room_type_id PK
+        INTEGER hotel_id FK
+        TEXT room_name
+        SMALLINT max_guests
+        NUMERIC price_per_night
+        INTEGER total_rooms
+    }
+
+    CUSTOMERS {
+        INTEGER customer_id PK
+        TEXT full_name
+        TEXT email UK
+        VARCHAR phone UK
+        VARCHAR loyalty_tier
+        TIMESTAMPTZ created_at
+    }
+
+    FLIGHTS {
+        INTEGER flight_id PK
+        VARCHAR airline_code FK
+        VARCHAR flight_no
+        CHAR origin FK
+        CHAR destination FK
+        TIMESTAMPTZ departure_at
+        TIMESTAMPTZ arrival_at
+        VARCHAR aircraft
+        INTEGER total_seats
+        NUMERIC base_fare
+        VARCHAR status
+    }
+
+    COUPONS {
+        VARCHAR coupon_code PK
+        VARCHAR applies_to
+        NUMERIC discount_pct
+        NUMERIC max_discount
+        DATE valid_from
+        DATE valid_to
+    }
+
+    BOOKINGS {
+        INTEGER booking_id PK
+        VARCHAR booking_ref UK
+        INTEGER customer_id FK
+        VARCHAR booking_type
+        TIMESTAMPTZ booked_at
+        NUMERIC total_amount
+        VARCHAR coupon_code FK
+        NUMERIC discount
+        VARCHAR payment_method
+        VARCHAR status
+        TIMESTAMPTZ cancelled_at
+        NUMERIC refund_amount
+    }
+
+    FLIGHT_BOOKINGS {
+        INTEGER booking_id PK, FK
+        INTEGER flight_id FK
+        VARCHAR cabin
+        SMALLINT passengers
+        NUMERIC fare_paid
+    }
+
+    PASSENGERS {
+        INTEGER booking_id PK, FK
+        SMALLINT seq_no PK
+        TEXT full_name
+        SMALLINT age
+        VARCHAR gender
+        VARCHAR seat_no
+    }
+
+    HOTEL_BOOKINGS {
+        INTEGER booking_id PK, FK
+        INTEGER hotel_id FK
+        INTEGER room_type_id FK
+        DATE check_in
+        DATE check_out
+        INTEGER rooms
+        INTEGER guests
+        VARCHAR room_number
+    }
+
+    HOTEL_REVIEWS {
+        INTEGER review_id PK
+        INTEGER booking_id FK
+        INTEGER hotel_id FK
+        SMALLINT rating
+        TEXT title
+        TEXT review_text
+        TIMESTAMPTZ created_at
+    }
+
+    AIRLINES ||--o{ FLIGHTS : operates
+    AIRPORTS ||--o{ FLIGHTS : origin
+    AIRPORTS ||--o{ FLIGHTS : destination
+    HOTELS ||--o{ ROOM_TYPES : contains
+    CUSTOMERS ||--o{ BOOKINGS : makes
+    COUPONS o|--o{ BOOKINGS : applies
+    FLIGHTS ||--o{ FLIGHT_BOOKINGS : booked_on
+    BOOKINGS ||--o| FLIGHT_BOOKINGS : "flight details"
+    FLIGHT_BOOKINGS ||--o{ PASSENGERS : includes
+    BOOKINGS ||--o| HOTEL_BOOKINGS : "hotel details"
+    HOTELS ||--o{ HOTEL_BOOKINGS : receives
+    ROOM_TYPES ||--o{ HOTEL_BOOKINGS : uses
+    HOTEL_BOOKINGS ||--o{ HOTEL_REVIEWS : receives
+    HOTELS ||--o{ HOTEL_REVIEWS : reviewed
