@@ -1,0 +1,48 @@
+=== R02 run 1 ===
+GroupAggregate  (cost=506.22..506.25 rows=2 width=36) (actual time=0.810..0.815 rows=31.00 loops=1)
+  Group Key: ((departure_at)::date)
+  Buffers: shared hit=163
+  ->  Sort  (cost=506.22..506.22 rows=2 width=9) (actual time=0.803..0.804 rows=31.00 loops=1)
+        Sort Key: ((departure_at)::date)
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=163
+        ->  Seq Scan on flights  (cost=0.00..506.21 rows=2 width=9) (actual time=0.743..0.794 rows=31.00 loops=1)
+              Filter: ((origin = 'BLR'::bpchar) AND (destination = 'DEL'::bpchar) AND ((departure_at)::date >= '2026-07-01'::date) AND ((departure_at)::date <= '2026-07-31'::date))
+              Rows Removed by Filter: 13817
+              Buffers: shared hit=160
+Planning:
+  Buffers: shared hit=100
+Planning Time: 0.198 ms
+Execution Time: 0.845 ms
+=== R02 run 2 ===
+GroupAggregate  (cost=506.22..506.25 rows=2 width=36) (actual time=0.810..0.816 rows=31.00 loops=1)
+  Group Key: ((departure_at)::date)
+  Buffers: shared hit=163
+  ->  Sort  (cost=506.22..506.22 rows=2 width=9) (actual time=0.804..0.805 rows=31.00 loops=1)
+        Sort Key: ((departure_at)::date)
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=163
+        ->  Seq Scan on flights  (cost=0.00..506.21 rows=2 width=9) (actual time=0.750..0.796 rows=31.00 loops=1)
+              Filter: ((origin = 'BLR'::bpchar) AND (destination = 'DEL'::bpchar) AND ((departure_at)::date >= '2026-07-01'::date) AND ((departure_at)::date <= '2026-07-31'::date))
+              Rows Removed by Filter: 13817
+              Buffers: shared hit=160
+Planning:
+  Buffers: shared hit=100
+Planning Time: 0.183 ms
+Execution Time: 0.842 ms
+=== R02 run 3 ===
+GroupAggregate  (cost=506.22..506.25 rows=2 width=36) (actual time=0.766..0.771 rows=31.00 loops=1)
+  Group Key: ((departure_at)::date)
+  Buffers: shared hit=163
+  ->  Sort  (cost=506.22..506.22 rows=2 width=9) (actual time=0.760..0.761 rows=31.00 loops=1)
+        Sort Key: ((departure_at)::date)
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=163
+        ->  Seq Scan on flights  (cost=0.00..506.21 rows=2 width=9) (actual time=0.708..0.751 rows=31.00 loops=1)
+              Filter: ((origin = 'BLR'::bpchar) AND (destination = 'DEL'::bpchar) AND ((departure_at)::date >= '2026-07-01'::date) AND ((departure_at)::date <= '2026-07-31'::date))
+              Rows Removed by Filter: 13817
+              Buffers: shared hit=160
+Planning:
+  Buffers: shared hit=100
+Planning Time: 0.197 ms
+Execution Time: 0.799 ms
