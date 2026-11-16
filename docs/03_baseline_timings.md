@@ -1,57 +1,51 @@
 # Phase 3 — Baseline Query Timings
 
-## Benchmark Method
+## Benchmark method
 
-The 30 fixed workload queries from `queries/workload_30.sql` were executed using:
+Ran the unchanged `queries/workload_30.sql` on 17 Nov 2026 against the Phase 2 seed database using PostgreSQL 18.6 on the team laptop (MacBook Pro M4). The helper ran `EXPLAIN (ANALYZE, BUFFERS)` three times per query; W01–W05 ran inside `BEGIN`/`ROLLBACK` so benchmark writes did not persist. The schema contains only Phase 2 constraints and their automatic PK/UNIQUE indexes; no Phase 4 tuning indexes were applied.
 
-```text
-EXPLAIN (ANALYZE, BUFFERS)
-```
+Raw plans for all three runs are in [`benchmarks/results/baseline/`](../benchmarks/results/baseline/), with the machine-readable averages and scan nodes in [`summary.csv`](../benchmarks/results/baseline/summary.csv). Scan notes below describe the plan observed on the third run.
 
-Each query was executed three times, and the average execution time reported by the benchmark script was recorded.
+## Baseline timing results
 
-The benchmark was run using the `before` phase on the same development environment.
+| SQL Query | Type | Run 1 (ms) | Run 2 (ms) | Run 3 (ms) | Average (ms) | Scan type(s) and plan note |
+|---|---:|---:|---:|---:|---:|---|
+| **R01: Flight search: Delhi → Mumbai on 5 July 2026 with seats left** | READ | 9.921 | 8.168 | 7.483 | 8.524 | `Seq Scan on flight_bookings; Seq Scan on flights; Index Scan using bookings_pkey on bookings` — Seq scans inspect all flights and flight-booking rows before joining seat counts; the date expression and route filters have no baseline index. |
+| **R02: Fare calendar: cheapest Bengaluru → Delhi fare for each day of July 2026** | READ | 0.845 | 0.842 | 0.799 | 0.829 | `Seq Scan on flights` — Seq scan reads all flights; casting departure_at to date prevents a plain timestamp range lookup. |
+| **R03: Hotel search: 4★+ hotels in Goa with a swimming pool, best rated first** | READ | 0.291 | 0.234 | 0.225 | 0.250 | `Seq Scan on hotels` — Seq scan checks the 3,000-row hotel table and each JSONB pool flag; small table size keeps this inexpensive. |
+| **R04: Room availability: rooms left per room type of hotel 208 for 10–12 July 2026** | READ | 2.459 | 2.117 | 1.925 | 2.167 | `Seq Scan on hotel_bookings; Index Scan using uq_room_type_hotel_name on room_types; Index Scan using bookings_pkey on bookings` — Seq scan checks hotel-booking date overlaps; only the room-type lookup uses an existing unique index. |
+| **R05: "My Trips": customer 1021's upcoming confirmed trips** | READ | 7.591 | 6.005 | 6.018 | 6.538 | `Seq Scan on bookings; Index Scan using flight_bookings_pkey on flight_bookings; Index Scan using flights_pkey on flights; Index Scan using hotel_bookings_pkey on hotel_bookings` — Seq scan finds the customer/status rows in bookings, then primary-key lookups fetch product details. |
+| **R06: Support: open a booking by its reference** | READ | 0.034 | 0.028 | 0.027 | 0.030 | `Index Scan using bookings_booking_ref_key on bookings` — Unique B-tree lookup on booking_ref finds the single booking directly. |
+| **R07: Airline manifest: passengers on flight 13047 ordered by seat** | READ | 2.013 | 2.065 | 2.034 | 2.037 | `Seq Scan on flight_bookings; Index Scan using bookings_pkey on bookings; Index Scan using passengers_pkey on passengers` — Seq scan finds bookings for the flight; primary-key lookups fetch bookings and passenger rows. |
+| **R08: Revenue management: July 2026 flights with fewer than 5 passengers booked** | READ | 8.105 | 7.746 | 7.779 | 7.877 | `Seq Scan on flight_bookings; Seq Scan on flights` — Seq scans read flights and flight_bookings, then aggregate passenger totals per scheduled flight. |
+| **R09: Trends: 10 most-booked routes in June 2026** | READ | 11.690 | 11.715 | 11.739 | 11.715 | `Seq Scan on flight_bookings; Seq Scan on bookings; Seq Scan on flights` — Seq scans join bookings, flight_bookings and flights before filtering and grouping route counts. |
+| **R10: Flight status board: delayed flights** | READ | 0.652 | 0.635 | 0.743 | 0.677 | `Seq Scan on flights` — Seq scan checks all 13,848 flights for the rare DELAYED status; the table is small. |
+| **R11: Payments: bookings waiting for payment for more than 30 minutes (checked at 23:59 on 30 Jun 2026)** | READ | 8.304 | 7.281 | 5.509 | 7.031 | `Seq Scan on bookings` — Seq scan checks all bookings for a rare pending status and timestamp cutoff because neither filter has a baseline index. |
+| **R12: Finance: revenue per booking type per month in 2026 (excluding cancellations)** | READ | 38.104 | 23.046 | 23.468 | 28.206 | `Seq Scan on bookings` — Seq scan reads bookings and aggregates by month/type; EXTRACT(YEAR) is applied to the timestamp column. |
+| **R13: Marketing: coupons that have never been used** | READ | 11.500 | 11.424 | 11.227 | 11.384 | `Seq Scan on coupons; Seq Scan on bookings` — Seq scans read all coupons and bookings; the NOT IN subquery contains NULL coupon_code values, so SQL NULL semantics filter out every coupon. |
+| **R14: Airline partnerships: cancellation rate of flight bookings per airline** | READ | 27.677 | 28.427 | 30.616 | 28.907 | `Seq Scan on bookings; Seq Scan on flight_bookings; Seq Scan on flights; Seq Scan on airlines` — Seq scans join the flight-booking population to compute a cancellation aggregate for every airline. |
+| **R15: Hotel partnerships: room-nights sold per city for stays in June 2026** | READ | 16.323 | 14.542 | 14.224 | 15.030 | `Seq Scan on bookings; Seq Scan on hotel_bookings; Seq Scan on hotels` — Seq scans inspect stay and booking rows for date overlap, then aggregate room-nights by city. |
+| **R16: Insights: average days between booking and travel, per booking type and loyalty tier** | READ | 68.727 | 63.513 | 99.410 | 77.217 | `Seq Scan on bookings; Seq Scan on customers; Seq Scan on flight_bookings; Seq Scan on flights; Seq Scan on hotel_bookings` — Several large tables are joined and grouped by booking type and loyalty tier, accounting for the high read cost. |
+| **R17: Loyalty: customers with 3 or more completed trips that started in 2026** | READ | 18.938 | 17.582 | 16.609 | 17.710 | `Seq Scan on bookings` — Seq scan reads bookings to filter completed 2026 trips and aggregate by customer. |
+| **R18: Hotel page: Goa reviews that mention breakfast** | READ | 4.286 | 4.230 | 4.265 | 4.260 | `Seq Scan on hotel_reviews; Seq Scan on hotels` — Seq scans inspect hotels and reviews; the leading-wildcard ILIKE cannot use a plain B-tree lookup. |
+| **R19: Operations: passengers booked on every flight departing in June 2026** | READ | 1140.815 | 1134.727 | 1139.180 | 1138.241 | `Seq Scan on flights; Seq Scan on flight_bookings; Index Only Scan using passengers_pkey on passengers` — The correlated passenger-count subquery rescans all flight_bookings once per each of 720 June flights; this dominates the baseline. |
+| **R20: Finance: bookings per day and running total for June 2026** | READ | 7.176 | 7.092 | 6.751 | 7.006 | `Seq Scan on bookings` — Seq scan reads bookings and casts each booked_at value to date before grouping daily counts and calculating a running total. |
+| **R21: Concessions: senior-citizen passengers (60+) per route in 2026** | READ | 17.634 | 16.127 | 16.508 | 16.756 | `Seq Scan on passengers; Seq Scan on flight_bookings; Seq Scan on flights` — Seq scans read passengers, flight_bookings and flights before filtering seniors and grouping by route. |
+| **R22: Support console: all bookings, newest first, page 4,001 (25 per page)** | READ | 32.196 | 32.341 | 32.628 | 32.388 | `Seq Scan on bookings` — Seq scan and sort process bookings, then OFFSET discards the first 100,000 rows to reach this page. |
+| **R23: Sign-in: find the customer by email, ignoring case** | READ | 8.402 | 8.243 | 8.285 | 8.310 | `Seq Scan on customers` — Seq scan checks all customers because lower(email) does not match the ordinary unique email index. |
+| **R24: Hotel ranking: Goa hotels with at least 5 reviews, by average review rating** | READ | 1.432 | 1.502 | 1.421 | 1.452 | `Seq Scan on hotel_reviews; Seq Scan on hotels` — Seq scans read hotels and reviews, then group and count reviews for Goa hotels before sorting the qualifying averages. |
+| **R25: Insights: last-minute flight bookings (made less than 24 hours before departure) in 2026** | READ | 17.079 | 17.017 | 17.288 | 17.128 | `Seq Scan on flight_bookings; Seq Scan on bookings; Seq Scan on flights` — Seq scans join bookings, flight_bookings and flights; the interval expression and date filter are evaluated across the joined rows. |
+| **W01: Checkout: create a pending flight booking for customer 1021** | WRITE | 0.698 | 0.474 | 0.476 | 0.549 | `(no scan)` — Insert plan has no table scan; one row is inserted and rolled back after each measurement. |
+| **W02: Payment gateway callback: confirm the oldest booking that is waiting for payment** | WRITE | 9.762 | 9.406 | 9.294 | 9.487 | `Index Scan using bookings_pkey on bookings` — The primary-key index is walked to find the smallest pending booking, filtering nearly all rows, then used to update the target row. |
+| **W03: Customer cancels booking MMA7772F with a 70% refund** | WRITE | 0.221 | 0.190 | 0.198 | 0.203 | `Index Scan using bookings_booking_ref_key on bookings` — Unique booking_ref index locates the target booking directly; the update touches one row. |
+| **W04: Flight ops: every flight that was scheduled to depart before 1 July 2026 has now departed** | WRITE | 1.040 | 1.057 | 0.988 | 1.028 | `Seq Scan on flights` — Seq scan checks all flights against status and departure time; only ten rows match on this seed. |
+| **W05: Front desk: assign room numbers to every guest checking in on 1 July 2026** | WRITE | 2.124 | 2.092 | 2.049 | 2.088 | `Seq Scan on hotel_bookings; Index Scan using bookings_pkey on bookings` — Seq scan checks hotel-booking dates and unassigned rooms, followed by booking primary-key lookups for matching confirmations. |
+| **Total (sum of all 30)** |  | **1476.039** | **1439.868** | **1479.166** | **1465.025** |  |
 
-## Baseline Timing Results
+## Baseline observations
 
-| SQL Query | Type | Run 1 (ms) | Run 2 (ms) | Run 3 (ms) | Average (ms) |
-|---|---|---:|---:|---:|---:|
-| R01 | READ | 26.612 | 5.901 | 5.519 | 12.677 |
-| R02 | READ | 0.738 | 0.672 | 0.645 | 0.685 |
-| R03 | READ | 4.491 | 0.207 | 0.206 | 1.635 |
-| R04 | READ | 11.646 | 1.821 | 1.732 | 5.066 |
-| R05 | READ | 51.356 | 5.394 | 5.217 | 20.656 |
-| R06 | READ | 0.951 | 0.030 | 0.024 | 0.335 |
-| R07 | READ | 3.815 | 1.862 | 1.768 | 2.482 |
-| R08 | READ | 5.478 | 5.286 | 5.192 | 5.319 |
-| R09 | READ | 11.676 | 11.654 | 11.368 | 11.566 |
-| R10 | READ | 0.693 | 0.616 | 0.602 | 0.637 |
-| R11 | READ | 6.511 | 4.994 | 4.417 | 5.307 |
-| R12 | READ | 22.602 | 22.255 | 21.995 | 22.284 |
-| R13 | READ | 11.395 | 11.173 | 11.056 | 11.208 |
-| R14 | READ | 27.664 | 27.555 | 27.462 | 27.560 |
-| R15 | READ | 14.226 | 14.082 | 14.031 | 14.113 |
-| R16 | READ | 105.036 | 72.860 | 62.387 | 80.094 |
-| R17 | READ | 18.898 | 16.678 | 16.632 | 17.403 |
-| R18 | READ | 7.522 | 4.522 | 4.355 | 5.466 |
-| R19 | READ | 1163.339 | 1136.387 | 1128.056 | 1142.594 |
-| R20 | READ | 6.815 | 6.556 | 6.286 | 6.552 |
-| R21 | READ | 36.994 | 15.808 | 15.623 | 22.808 |
-| R22 | READ | 31.996 | 31.912 | 31.859 | 31.922 |
-| R23 | READ | 8.693 | 8.282 | 8.142 | 8.372 |
-| R24 | READ | 1.404 | 1.400 | 1.388 | 1.397 |
-| R25 | READ | 17.565 | 17.013 | 16.929 | 17.169 |
-| W01 | WRITE | 0.891 | 0.396 | 0.384 | 0.557 |
-| W02 | WRITE | 18.125 | 9.328 | 8.928 | 12.127 |
-| W03 | WRITE | 0.195 | 0.161 | 0.159 | 0.172 |
-| W04 | WRITE | 1.010 | 0.981 | 0.946 | 0.979 |
-| W05 | WRITE | 2.621 | 2.152 | 2.073 | 2.282 |
-
-## Baseline Observations
-
-- All 30 workload queries completed successfully.
-- R19 has the highest average execution time at **1142.594 ms**.
-- R16 has the second-highest average execution time at **80.094 ms**.
-- Among the WRITE queries, W02 has the highest average execution time at **12.127 ms**.
-- The scan nodes and detailed execution plans are preserved in `benchmarks/results/before/`.
-- The benchmark summary is stored in `benchmarks/results/before/summary.csv`.
+- R19 is the slowest query at **1138.241 ms** on average. Its correlated subquery scans `flight_bookings` once for each June flight.
+- R16 is the next slowest read at **77.217 ms**, due to joining and grouping across booking, customer, flight and hotel tables.
+- W02 is the slowest write at **9.487 ms**. Its plan walks the booking primary-key index while filtering for the oldest pending payment.
+- R13 returns no coupons because `bookings.coupon_code` contains NULLs and `NOT IN` treats a NULL in its subquery as unknown. This is a wrong-result issue to address in Phase 4; the Phase 3 workload itself was left unchanged.
+- All 30 queries completed successfully. Every write was rolled back, and the raw plan files retain the three measured executions for audit.
