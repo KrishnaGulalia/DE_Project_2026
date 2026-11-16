@@ -1,5 +1,3 @@
-DROP SCHEMA IF EXISTS mmt CASCADE;
-
 CREATE SCHEMA mmt;
 SET search_path TO mmt;
 
@@ -41,7 +39,10 @@ CREATE TABLE hotels (
         CHECK (star_rating BETWEEN 1 AND 5),
 
     CONSTRAINT chk_hotel_user_rating
-        CHECK (user_rating IS NULL OR user_rating BETWEEN 0 AND 5)
+        CHECK (user_rating IS NULL OR user_rating BETWEEN 0 AND 5),
+
+    CONSTRAINT chk_hotel_amenities_object
+        CHECK (jsonb_typeof(amenities) = 'object')
 );
 
 
@@ -119,6 +120,9 @@ CREATE TABLE flights (
         REFERENCES airports(iata_code)
         ON DELETE RESTRICT,
 
+    CONSTRAINT chk_flight_number_format
+        CHECK (flight_no ~ '^[A-Z0-9]+-[A-Z0-9]+$'),
+
     CONSTRAINT chk_flight_route
         CHECK (origin <> destination),
 
@@ -182,6 +186,9 @@ CREATE TABLE bookings (
         FOREIGN KEY (coupon_code)
         REFERENCES coupons(coupon_code)
         ON DELETE RESTRICT,
+
+    CONSTRAINT chk_booking_ref_format
+        CHECK (booking_ref ~ '^[A-Z0-9]+$'),
 
     CONSTRAINT chk_booking_type
         CHECK (booking_type IN ('FLIGHT', 'HOTEL')),
@@ -265,6 +272,9 @@ CREATE TABLE passengers (
 
     CONSTRAINT chk_passenger_sequence
         CHECK (seq_no > 0),
+
+    CONSTRAINT chk_passenger_seat_format
+        CHECK (seat_no IS NULL OR seat_no ~ '^[0-9]+[A-Z]$'),
 
     CONSTRAINT chk_passenger_age
         CHECK (age >= 0 AND age <= 120),

@@ -1,49 +1,18 @@
 # Problem Understanding — MakeMyTrip Travel Booking Database
 
-## P1 — Flight Search, Fare Calendar and Seat Availability
-- **Business need:** Users need to search for flights, compare fares across dates, and see available seats while planning a trip.
-- **Affected stakeholder:** Travellers/customers.
-- **Type:** Customer-facing / real-time.
-- **Assumptions:** Flight, route, fare, schedule, and seat-availability information is stored and can be queried using the booking and flight data.
+| Problem | Business need | Affected stakeholder | Workload class |
+|---|---|---|---|
+| **P1 — Flight search and fares** | Find route/date flights, compare daily fares, and show current seats left while a traveller is choosing a trip. | Traveller | Customer-facing / real-time |
+| **P2 — Hotel search and rooms** | Filter hotels by city, rating and amenities, then check room inventory across the requested stay dates. | Traveller | Customer-facing / real-time |
+| **P3 — My Trips and lookup** | Retrieve a customer's confirmed trips and let support find a booking quickly by reference; sign-in lookup must also be responsive. | Traveller; customer support | Customer-facing / real-time |
+| **P4 — Airline operations** | Supply passenger manifests and low-load flight information for operations; report cancellation rates to airline partners. | Airline partner | Mixed: real-time partner tools (manifest/load) and reporting / analytics (cancellation rate) |
+| **P5 — Checkout and payments** | Create bookings, process pending-payment confirmations, and record cancellations/refunds reliably under checkout load. | Payments team; traveller | Customer-facing / real-time |
+| **P6 — Coupon usage** | Identify coupons that have never appeared on a booking so marketing can assess campaign adoption. | Marketing | Reporting / analytics |
+| **P7 — Hotel operations and performance** | Summarize room-nights by city for partners and assign rooms promptly at check-in. | Hotel partner; front desk | Mixed: reporting / analytics (room-nights) and real-time partner operations (check-in) |
+| **P8 — Business insight and growth** | Produce revenue, route, lead-time, repeat-customer, concession and last-minute-booking views while the booking volume grows. | Finance; revenue management; loyalty team | Reporting / analytics |
 
-## P2 — Hotel Search and Room Availability
-- **Business need:** Users need to search for hotels and determine which rooms are available for their selected stay.
-- **Affected stakeholder:** Travellers/customers.
-- **Type:** Customer-facing / real-time.
-- **Assumptions:** Hotel, room type, room inventory, booking, check-in, and check-out information is available in the database.
+## Assumptions
 
-## P3 — My Trips and Booking Lookup
-- **Business need:** Users need to view their existing bookings and retrieve trip-related information after signing in.
-- **Affected stakeholder:** Travellers/customers.
-- **Type:** Customer-facing / real-time.
-- **Assumptions:** Each booking can be associated with a customer and the relevant flight or hotel booking details.
-
-## P4 — Airline Manifests, Load and Cancellations
-- **Business need:** Airlines need booking and passenger information to prepare manifests, understand flight load, and handle cancellations.
-- **Affected stakeholder:** Airline/operations staff.
-- **Type:** Customer-facing / real-time.
-- **Assumptions:** Passenger, booking, flight-booking, flight, and cancellation-related information can be connected through the database.
-
-## P5 — Checkout, Payments and Cancellations
-- **Business need:** The system needs to support booking checkout and maintain payment and cancellation-related information.
-- **Affected stakeholder:** Travellers/customers and booking/payment operations staff.
-- **Type:** Customer-facing / real-time.
-- **Assumptions:** Booking records contain the information required to identify transactions and their associated booking status.
-
-## P6 — Coupon Usage Reporting
-- **Business need:** The business needs to understand coupon usage and its impact across bookings.
-- **Affected stakeholder:** Business/marketing teams.
-- **Type:** Reporting / analytics.
-- **Assumptions:** Coupon information can be associated with bookings so that usage can be aggregated and analyzed.
-
-## P7 — Hotel Room-Nights and Check-In Analysis
-- **Business need:** The business needs to analyze hotel room usage and check-in activity.
-- **Affected stakeholder:** Hotel/operations and business teams.
-- **Type:** Reporting / analytics.
-- **Assumptions:** Hotel booking records contain the information required to determine stays, room usage, and check-in activity.
-
-## P8 — Finance, Loyalty and Business Insights
-- **Business need:** The business needs consolidated booking and customer information for financial, loyalty, and other business insights.
-- **Affected stakeholder:** Finance, business and loyalty teams.
-- **Type:** Reporting / analytics.
-- **Assumptions:** Booking, customer, payment, coupon and related transactional data can be combined for analysis.
+- A booking has one product type: flight or hotel; its detail row is stored in the matching subtype table.
+- “Seats left” and “rooms left” are derived from inventory less non-cancelled bookings; availability is therefore a live transactional concern.
+- The requested performance class follows the operation's use: manifests, checkout and check-in are time-sensitive, while trend, finance, loyalty and campaign summaries are analytical. P4 and P7 include both kinds of work.
