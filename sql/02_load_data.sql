@@ -102,4 +102,8 @@ LEFT JOIN hotel_bookings hb
 WHERE
     (fb.booking_id IS NOT NULL AND hb.booking_id IS NOT NULL)
     OR
-    (fb.booking_id IS NULL AND hb.booking_id IS NULL);
+    (fb.booking_id IS NULL AND hb.booking_id IS NULL)
+    OR
+    (b.booking_type = 'FLIGHT' AND fb.booking_id IS NULL)
+    OR
+    (b.booking_type = 'HOTEL' AND hb.booking_id IS NULL);
