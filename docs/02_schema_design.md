@@ -152,7 +152,7 @@ Coupon deletion is restricted while referenced. Booking deletion cascades to its
 - `flight_bookings` 1:N `passengers`; `room_types` 1:N `hotel_bookings`; `hotel_bookings` 1:N `hotel_reviews` in the schema (the seed currently has at most one review per stay).
 - Dependent detail rows cascade when their booking is deleted. Master/reference rows (airlines, airports, flights, hotels, room types, coupons, customers) are restricted where history or a live reference remains.
 
-Rendered ER diagram: [PNG](../diagrams/er_diagram.png) · Editable Mermaid source: [er_diagram.mmd](../diagrams/er_diagram.mmd).
+Rendered ER diagram: [PNG](../diagrams/mermaid-diagram.png) · Editable Mermaid source: [er_diagram.mmd](../diagrams/er_diagram.mmd).
 
 ## Functional dependencies and normal forms
 
