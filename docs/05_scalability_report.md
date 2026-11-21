@@ -1,214 +1,69 @@
-Good. **CP4 is partially set up**, but we should not fabricate the large-data results before `large_data.zip` is released.
-
-The next thing is to put the **actual partitioning evidence** into `docs/05_scalability_report.md`.
-
-Paste this:
-
-```markdown
-# Scalability Report
-
-## 1. Large-Dataset Scalability
-
-The faculty-provided large dataset is expected to contain approximately 20× the seed-data volume. The large-data benchmark will be completed once `large_data.zip` is provided.
-
-The optimized queries from `sql/06_optimized_queries.sql` will be benchmarked on the large dataset using the same methodology as the seed benchmark:
-
-- `EXPLAIN (ANALYZE, BUFFERS)`
-- 3 executions per query
-- Average execution time reported
-- Write queries executed inside `BEGIN; ... ROLLBACK;`
-
-The original 30-query workload will not be run directly against the large dataset because some queries may take an excessive amount of time.
-
-## 2. Performance Targets
-
-| Query Group | Queries | Target |
-|---|---|---:|
-| Real-time / customer-facing | R01, R02, R03, R04, R05, R06, R07, R10, R11, R23, W01, W02, W03 | < 5 ms |
-| Interactive partner tools | R08, R13, R18, R22, R24, W05 | < 250 ms |
-| Reports and analytics | R09, R12, R14, R15, R16, R17, R19, R20, R21, R25 | < 5,000 ms |
-| Batch jobs | W04 | < 1,000 ms |
-
-Large-data execution times and target status will be added after the faculty dataset is released.
-
-## 3. Partitioning Design
-
-### 3.1 Strategy
-
-The `bookings` table is a good candidate for **RANGE partitioning on `booked_at`**.
-
-The main reason is that several workload queries operate over time ranges. Partitioning by booking date allows PostgreSQL to eliminate partitions that cannot contain rows relevant to a query.
-
-For the design demonstration, the partitioned table was created as:
-
-```sql
-CREATE TABLE bookings_partitioned (
-    booking_id INTEGER NOT NULL,
-    booking_ref VARCHAR(20) NOT NULL,
-    customer_id INTEGER NOT NULL,
-    booking_type VARCHAR(10) NOT NULL,
-    booked_at TIMESTAMPTZ NOT NULL,
-    total_amount NUMERIC(12,2) NOT NULL,
-    coupon_code VARCHAR(30),
-    discount NUMERIC(12,2) NOT NULL DEFAULT 0,
-    payment_method VARCHAR(20) NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    cancelled_at TIMESTAMPTZ,
-    refund_amount NUMERIC(12,2),
-
-    PRIMARY KEY (booking_id, booked_at)
-)
-PARTITION BY RANGE (booked_at);
-```
-
-The seed dataset was divided into the following time ranges:
-
-| Partition | Range | Rows |
-|---|---|---:|
-| `bookings_2025_h1` | Jan 2025 – Jun 2025 | 47,994 |
-| `bookings_2025_h2` | Jul 2025 – Dec 2025 | 48,774 |
-| `bookings_2026_h1` | Jan 2026 – Jun 2026 | 48,024 |
-| `bookings_2026_h2` | Jul 2026 – Dec 2026 | 0 |
-| `bookings_default` | Other dates | 0 |
-
-The total is:
-
-**47,994 + 48,774 + 48,024 = 144,792 bookings**, matching the original seed dataset.
-
-### 3.2 Partition Pruning
-
-A partition-pruning test was executed using:
-
-```sql
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT booking_id, booking_ref, customer_id, total_amount
-FROM bookings_partitioned
-WHERE booked_at >= '2026-06-01'
-  AND booked_at < '2026-07-01';
-```
-
-PostgreSQL produced a plan using:
-
-```text
-Index Scan using bookings_2026_h1_pkey on bookings_2026_h1
-```
-
-This demonstrates that the June 2026 date range can be isolated to the `bookings_2026_h1` partition rather than scanning all partitions.
-
-### 3.3 Primary-Key Rule
-
-For a partitioned table, PostgreSQL requires a primary key or unique constraint defined on the partitioned table to include the partition key.
-
-Therefore, the partitioned design uses:
-
-```sql
-PRIMARY KEY (booking_id, booked_at)
-```
-
-instead of only:
-
-```sql
-PRIMARY KEY (booking_id)
-```
-
-because `booked_at` is the partition key.
-
-## 4. Large-Data Results
-
-This section will be completed after `large_data.zip` is released.
-
-| Query | Optimized on Seed (ms) | Optimized on Large (ms) | Growth | Meets Target? | Change Required |
-|---|---:|---:|---:|---|---|
-| R01 | 1.427 | TBD | TBD | TBD | TBD |
-| R02 | 0.785 | TBD | TBD | TBD | TBD |
-| R03 | 0.266 | TBD | TBD | TBD | TBD |
-| R04 | 2.203 | TBD | TBD | TBD | TBD |
-| R05 | 6.056 | TBD | TBD | TBD | TBD |
-| R06 | 0.030 | TBD | TBD | TBD | TBD |
-| R07 | 0.112 | TBD | TBD | TBD | TBD |
-| R08 | 1.703 | TBD | TBD | TBD | TBD |
-| R09 | 7.497 | TBD | TBD | TBD | TBD |
-| R10 | 0.642 | TBD | TBD | TBD | TBD |
-| R11 | 4.573 | TBD | TBD | TBD | TBD |
-| R12 | 22.210 | TBD | TBD | TBD | TBD |
-| R13 | 10.981 | TBD | TBD | TBD | TBD |
-| R14 | 25.625 | TBD | TBD | TBD | TBD |
-| R15 | 13.762 | TBD | TBD | TBD | TBD |
-| R16 | 54.923 | TBD | TBD | TBD | TBD |
-| R17 | 13.449 | TBD | TBD | TBD | TBD |
-| R18 | 4.832 | TBD | TBD | TBD | TBD |
-| R19 | 4.656 | TBD | TBD | TBD | TBD |
-| R20 | 5.053 | TBD | TBD | TBD | TBD |
-| R21 | 15.771 | TBD | TBD | TBD | TBD |
-| R22 | 8.524 | TBD | TBD | TBD | TBD |
-| R23 | 8.606 | TBD | TBD | TBD | TBD |
-| R24 | 1.517 | TBD | TBD | TBD | TBD |
-| R25 | 17.672 | TBD | TBD | TBD | TBD |
-| W01 | 0.437 | TBD | TBD | TBD | TBD |
-| W02 | 13.289 | TBD | TBD | TBD | TBD |
-| W03 | 0.180 | TBD | TBD | TBD | TBD |
-| W04 | 0.966 | TBD | TBD | TBD | TBD |
-| W05 | 2.197 | TBD | TBD | TBD | TBD |
-
-## 5. Growth Analysis
-
-The growth behavior of the optimized queries will be analyzed after benchmarking the large dataset.
-
-Queries using selective indexes are expected to scale differently from queries involving large sequential scans, joins, aggregations, and sorting. The actual classification will be based on measured execution times and execution plans.
-
-## 6. Storage
-
-Seed and large-dataset storage measurements will be recorded after the large dataset is available.
-
-The report will compare:
-
-- Total database size
-- Table size
-- Index size
-- Seed dataset versus large dataset
-
-## 7. Architecture for 100× Volume
-
-### Partitioning
-
-RANGE partitioning by `booked_at` is proposed for `bookings` because booking-related analytical queries frequently operate over time periods.
-
-Partition pruning reduces the amount of data that needs to be examined for date-restricted queries.
-
-### Sharding
-
-A final sharding strategy will be selected using the large-data measurements.
-
-The main alternatives considered are:
-
-- Sharding by customer
-- Sharding by product type
-- Sharding by travel date
-
-Customer-based sharding could make customer "My Trips" queries efficient but could make flight-manifest queries cross-shard.
-
-Travel-date sharding aligns naturally with time-based booking analytics but customer histories could span multiple shards.
-
-### Read Replicas and Caching
-
-Read-heavy analytical and customer-facing queries can potentially be routed to read replicas.
-
-Frequently repeated, relatively stable read queries can also be candidates for caching.
-
-Write operations and queries requiring the most current transactional state should remain on the primary database.
-
-### Maintenance
-
-At larger scale, regular maintenance will be important:
-
-- VACUUM/autovacuum for frequently modified tables
-- ANALYZE after major data changes
-- Archiving old booking data where appropriate
-- Refreshing summary tables for expensive recurring analytical queries
-
-## 8. Conclusion
-
-The seed-data implementation successfully loads all 144,792 bookings and the partitioning design demonstrates effective partition pruning for date-restricted queries.
-
-Final conclusions about readiness for the expected 20× volume will be made after the faculty-provided large dataset is benchmarked. Remaining risks will be identified from the large-data execution plans, timing growth, storage measurements, and any queries that fail their performance targets.
-```
+# CP4 Scalability Report — MakeMyTrip Travel Booking Database
+
+## Data and methodology
+
+The 12 CSVs supplied as `large_data.zip` contain **10,439,710 data records**, including **2,897,285 bookings**, **800,000 customers**, and **3,272,394 passengers**. These are verified CSV record counts, not independently re-counted PostgreSQL rows.
+
+Using PostgreSQL with the CP1 schema and CP3 indexes, the 30-query workload was measured with `EXPLAIN (ANALYZE, BUFFERS)` **three times per query** and averaged. Writes were rolled back after each run. Raw plans are saved under `benchmarks/results/large/`. Results are machine- and cache-dependent.
+
+## Measured scalability comparisons
+
+| Query | Category | Seed after (ms) | Large (ms) | Growth | Target (ms) | Pass? | Scan nodes (large) |
+|---|---|---:|---:|---:|---:|---|---|
+| R01 | Real-time | 1.763 | 1.719 | 0.98× | < 5 | PASS | Seq Scan on flights ;  Index Scan using idx_flight_bookings_flight_id on flight_bookings ;  Index Scan using bookings_pkey on bookings |
+| R02 | Real-time | 0.885 | 0.810 | 0.92× | < 5 | PASS | Seq Scan on flights |
+| R03 | Real-time | 0.268 | 4.376 | 16.33× | < 5 | PASS | Seq Scan on hotels |
+| R04 | Real-time | 2.233 | 20.778 | 9.30× | < 5 | **FAIL** | Seq Scan on hotel_bookings ;  Seq Scan on room_types ;  Index Scan using bookings_pkey on bookings |
+| R05 | Real-time | 5.813 | 50.321 | 8.66× | < 5 | **FAIL** | Seq Scan on bookings ;  Index Scan using flight_bookings_pkey on flight_bookings ;  Index Scan using flights_pkey on flights ;  Index Scan using hotel_bookings_pkey on hotel_bookings |
+| R06 | Real-time | 0.031 | 0.030 | 0.97× | < 5 | PASS | Index Scan using bookings_booking_ref_key on bookings |
+| R07 | Real-time | 0.111 | 1.269 | 11.43× | < 5 | PASS | Index Scan using idx_flight_bookings_flight_id on flight_bookings ;  Index Scan using bookings_pkey on bookings ;  Index Scan using passengers_pkey on passengers |
+| R08 | Interactive | 1.580 | 16.463 | 10.42× | < 250 | PASS | Seq Scan on flights ;  Index Scan using idx_flight_bookings_flight_id on flight_bookings |
+| R09 | Analytics | 7.254 | 59.169 | 8.16× | < 5000 | PASS | Seq Scan on flight_bookings ;  Index Scan using idx_bookings_booked_at_desc on bookings ;  Seq Scan on flights |
+| R10 | Real-time | 0.664 | 0.755 | 1.14× | < 5 | PASS | Seq Scan on flights |
+| R11 | Real-time | 4.833 | 59.115 | 12.23× | < 5 | **FAIL** | Seq Scan on bookings |
+| R12 | Analytics | 22.020 | 309.486 | 14.05× | < 5000 | PASS | Seq Scan on bookings |
+| R13 | Interactive | 11.483 | 183.174 | 15.95× | < 250 | PASS | Seq Scan on bookings ;  Seq Scan on coupons |
+| R14 | Analytics | 31.533 | 442.146 | 14.02× | < 5000 | PASS | Seq Scan on bookings ;  Seq Scan on flight_bookings ;  Seq Scan on flights ;  Seq Scan on airlines |
+| R15 | Analytics | 13.957 | 125.361 | 8.98× | < 5000 | PASS | Seq Scan on bookings ;  Seq Scan on hotel_bookings ;  Seq Scan on hotels |
+| R16 | Analytics | 58.549 | 1106.220 | 18.89× | < 5000 | PASS | Seq Scan on bookings ;  Seq Scan on customers ;  Seq Scan on flight_bookings ;  Seq Scan on flights ;  Seq Scan on hotel_bookings |
+| R17 | Analytics | 13.428 | 361.851 | 26.95× | < 5000 | PASS | Index Scan using idx_bookings_booked_at_desc on bookings |
+| R18 | Interactive | 4.194 | 37.023 | 8.83× | < 250 | PASS | Seq Scan on hotel_reviews ;  Index Scan using hotels_pkey on hotels |
+| R19 | Analytics | 4.464 | 126.757 | 28.40× | < 5000 | PASS | Seq Scan on flights ;  Index Scan using idx_flight_bookings_flight_id on flight_bookings ;  Index Only Scan using passengers_pkey on passengers |
+| R20 | Analytics | 9.893 | 81.246 | 8.21× | < 5000 | PASS | Seq Scan on bookings |
+| R21 | Analytics | 17.066 | 155.688 | 9.12× | < 5000 | PASS | Seq Scan on passengers ;  Seq Scan on flight_bookings ;  Seq Scan on flights |
+| R22 | Interactive | 8.486 | 9.994 | 1.18× | < 250 | PASS | Index Scan using idx_bookings_booked_at_desc on bookings |
+| R23 | Real-time | 0.041 | 0.031 | 0.76× | < 5 | PASS | Index Scan using idx_customers_lower_email on customers |
+| R24 | Interactive | 1.434 | 34.763 | 24.24× | < 250 | PASS | Seq Scan on hotel_reviews ;  Seq Scan on hotels |
+| R25 | Analytics | 14.684 | 187.080 | 12.74× | < 5000 | PASS | Seq Scan on flight_bookings ;  Index Scan using idx_bookings_booked_at_desc on bookings ;  Seq Scan on flights |
+| W01 | Real-time | 0.496 | 0.664 | 1.34× | < 5 | PASS | (no scan) |
+| W02 | Real-time | 9.188 | 240.472 | 26.17× | < 5 | **FAIL** | Index Scan using bookings_pkey on bookings |
+| W03 | Real-time | 0.179 | 0.237 | 1.32× | < 5 | PASS | Index Scan using bookings_booking_ref_key on bookings |
+| W04 | Batch | 0.988 | 1.830 | 1.85× | < 1000 | PASS | Seq Scan on flights |
+| W05 | Interactive | 2.172 | 46.488 | 21.40× | < 250 | PASS | Seq Scan on hotel_bookings ;  Index Scan using bookings_pkey on bookings |
+
+## Target results
+
+**26/30 measured queries passed** their category's average-time target.
+
+Queries requiring attention: R04 (20.778 ms, target < 5 ms), R05 (50.321 ms, target < 5 ms), R11 (59.115 ms, target < 5 ms), W02 (240.472 ms, target < 5 ms).
+
+Largest runtime growth relative to the indexed seed benchmark: R19 (28.40×), R17 (26.95×), W02 (26.17×), R24 (24.24×), W05 (21.40×).
+
+## Interpretation and limitations
+
+- Growth factors use the earlier `after/summary.csv` timings as the baseline. These are indexed-seed measurements, not necessarily the same SQL text as every CP4 query; compare cautiously.
+- A sequential scan is not automatically a bad plan: broad aggregates can be faster with sequential/parallel scanning. Investigate `BUFFERS` hit/read counts and returned row counts before modifying indexes.
+- Small seed runtime values can make growth ratios unstable. Use absolute latency and workload targets alongside ratios.
+- The benchmark script runs queries sequentially without explicit concurrency; these figures do not prove capacity at high simultaneous user load.
+
+## Partitioning evidence
+
+`sql/08_partitioning.sql` builds a range-partitioned **demonstration copy** of bookings by `booked_at` (2025 H1/H2, 2026 H1/H2, plus default), copies booking rows, runs `ANALYZE`, records partition row counts, and tests bounded date predicates. See `benchmarks/results/large/partitioning_plans.txt` for the actual output. Pruning only applies when the planner can constrain the partition key. This is not a production drop-in replacement due to key and FK dependencies.
+
+## 100× growth architecture (proposed; not measured)
+
+At roughly 100× current data, plan for **monthly booking partitions** with retention/archival, **read replicas** for analytics, a bounded **cache** for hot flight and hotel search, and carefully evaluated **sharding** by customer/booking scope only after one tuned primary is insufficient. Use connection pooling, batch ETL, off-peak index maintenance and backups. Monitor p95/p99 latency, index bloat, vacuum lag, IO utilization, lock contention, disk space, and replica lag. Cross-shard joins, globally unique IDs, data movement and transaction boundaries increase complexity.
+
+## Reproduction
+
+Run `./run_cp4.sh` from the repository root to load CSVs, create indexes, produce raw `EXPLAIN (ANALYZE, BUFFERS)` plans, populate `benchmarks/results/large/summary.csv`, execute the partition test, and regenerate this report.

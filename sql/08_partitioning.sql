@@ -74,6 +74,14 @@ CREATE INDEX idx_bookings_partitioned_customer_id
 ON bookings_partitioned(customer_id);
 
 
+-- Populate the demonstration table with the large database booking rows.
+INSERT INTO bookings_partitioned SELECT * FROM bookings;
+ANALYZE bookings_partitioned;
+
+-- Confirm distribution and partitioning coverage.
+SELECT tableoid::regclass AS partition_name, count(*) AS rows
+FROM bookings_partitioned GROUP BY tableoid ORDER BY 1;
+
 -- Demonstration of partition pruning.
 -- Only the 2026_h1 partition should be scanned for this range.
 
